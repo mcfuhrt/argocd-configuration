@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sleep-pod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:mcfuhrt/argo-applications.git
+    targetRevision: HEAD
+    path: app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: myapp
+  syncPolicy:
+    retry:
+      limit: 2
+    automated:
+        prune: true 
+        selfHeal: true
+        allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true
