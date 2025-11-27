@@ -52,7 +52,7 @@ spec:
     spec:
       project: recce
       destination:
-        name: https://kubernetes.default.svc
+        name: in-cluster
         namespace: recce
       sources:
         - repoURL: git@github.com:mcfuhrt/argo-applications.git
