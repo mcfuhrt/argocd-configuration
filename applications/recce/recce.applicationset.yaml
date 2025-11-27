@@ -4,7 +4,7 @@ metadata:
   name: sleep-pod
   namespace: argocd
 spec:
-  project: default
+  project: recce
   source:
     repoURL: git@github.com:mcfuhrt/argo-applications.git
     targetRevision: HEAD
