@@ -18,5 +18,6 @@ spec:
   project: recce
   syncPolicy:
     automated:
+      enabled: true
       prune: true
       selfHeal: true
