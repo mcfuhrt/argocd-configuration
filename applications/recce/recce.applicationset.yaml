@@ -65,10 +65,12 @@ spec:
             recurse: true
       syncPolicy:
         automated:
+          enabled: true
           prune: true
           selfHeal: false
         syncOptions:
           - CreateNamespace=true
+          - Replace=true
         # managedNamespaceMetadata:
         #   labels:
         #     # The labels to set on the application namespace
