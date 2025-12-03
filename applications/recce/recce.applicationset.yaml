@@ -1,84 +1,81 @@
-# apiVersion: argoproj.io/v1alpha1
-# kind: Application
-# metadata:
-#   name: sleep-pod
-#   namespace: argocd
-# spec:
-#   project: recce
-  # source:
-  #   repoURL: git@github.com:mcfuhrt/argo-applications.git
-  #   targetRevision: HEAD
-  #   path: app
-#   destination:
-#     server: https://kubernetes.default.svc
-#     namespace: myapp
-#   syncPolicy:
-#     retry:
-#       limit: 2
-#     automated:
-#         prune: true 
-#         selfHeal: true
-#         allowEmpty: false
-#     syncOptions:
-#       - CreateNamespace=true
-#       - Replace=true
-
----
 apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
+kind: Application
 metadata:
   name: recce
 spec:
-  goTemplate: true
-  goTemplateOptions: ["missingkey=error"]
-  # generators:
-  # - pullRequest:
-  #     github:
-  #       # The GitHub organization or user.
-  #       owner: mcfuhrt
-  #       # The Github repository
-  #       repo: argo-dbt
-  #       # Labels is used to filter the PRs that you want to target. (optional)
-  #       # labels:
-  #       # - preview
-  #       tokenRef:
-  #         secretName: github-token
-  #         key: token
-  #     requeueAfterSeconds: 30
-  template:
-    metadata:
-      # name: "recce-{{ .branch }}-{{ .number }}"
-      name: "recce"
-      labels:
-        application: recce
-        # branch: "{{ .branch }}"
-        # pr_number: "{{ .number }}"
-    spec:
-      project: recce
-      destination:
-        name: in-cluster
-        # namespace: "recce-pr-{{ .number }}"
-        namespace: "recce"
-      sources:
-        - repoURL: git@github.com:mcfuhrt/argo-applications.git
-          targetRevision: main
-          path: app
-          directory:
-            recurse: true
-      syncPolicy:
-        automated:
-          enabled: true
-          prune: true
-          selfHeal: false
-        syncOptions:
-          - CreateNamespace=true
-          - Replace=true
-        # managedNamespaceMetadata:
-        #   labels:
-        #     # The labels to set on the application namespace
-        #     costcenter: "910200"
-        #     team: "datahub"
-        #     environment: "{{ environment }}"
-        #     part-of: "prefect"
-        #     nginx-internal-traffic-watch: "true"
-        #     using-gar-images: "true"
+  project: recce
+  source:
+    repoURL: git@github.com:mcfuhrt/argo-applications.git
+    targetRevision: HEAD
+    path: app
+  destination:
+    name: in-cluster
+    namespace: recce
+  syncPolicy:
+    retry:
+      limit: 2
+    automated:
+        prune: true 
+        selfHeal: true
+        allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true
+
+# ---
+# apiVersion: argoproj.io/v1alpha1
+# kind: ApplicationSet
+# metadata:
+#   name: recce
+# spec:
+#   goTemplate: true
+#   goTemplateOptions: ["missingkey=error"]
+#   generators:
+#   - pullRequest:
+#       github:
+#         # The GitHub organization or user.
+#         owner: mcfuhrt
+#         # The Github repository
+#         repo: argo-dbt
+#         # Labels is used to filter the PRs that you want to target. (optional)
+#         # labels:
+#         # - preview
+#         tokenRef:
+#           secretName: github-token
+#           key: token
+#       requeueAfterSeconds: 30
+#   template:
+#     metadata:
+#       name: "recce-{{ .branch }}-{{ .number }}"
+#       labels:
+#         application: recce
+#         branch: "{{ .branch }}"
+#         pr_number: "{{ .number }}"
+#     spec:
+#       project: recce
+#       destination:
+#         name: in-cluster
+#         namespace: "recce-pr-{{ .number }}"
+#       sources:
+#         - repoURL: git@github.com:mcfuhrt/argo-applications.git
+#           targetRevision: main
+#           path: app
+#           directory:
+#             recurse: true
+#       syncPolicy:
+#         automated:
+#           enabled: true
+#           prune: true
+#           selfHeal: false
+#         syncOptions:
+#           - CreateNamespace=true
+#           - Replace=true
+#         # managedNamespaceMetadata:
+#         #   labels:
+#         #     # The labels to set on the application namespace
+#         #     costcenter: "910200"
+#         #     team: "datahub"
+#         #     environment: "{{ environment }}"
+#         #     part-of: "prefect"
+#         #     nginx-internal-traffic-watch: "true"
+#         #     using-gar-images: "true"
