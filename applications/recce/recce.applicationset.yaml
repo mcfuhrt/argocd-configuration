@@ -31,32 +31,34 @@ metadata:
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
-  generators:
-  - pullRequest:
-      github:
-        # The GitHub organization or user.
-        owner: mcfuhrt
-        # The Github repository
-        repo: argo-dbt
-        # Labels is used to filter the PRs that you want to target. (optional)
-        # labels:
-        # - preview
-        tokenRef:
-          secretName: github-token
-          key: token
-      requeueAfterSeconds: 30
+  # generators:
+  # - pullRequest:
+  #     github:
+  #       # The GitHub organization or user.
+  #       owner: mcfuhrt
+  #       # The Github repository
+  #       repo: argo-dbt
+  #       # Labels is used to filter the PRs that you want to target. (optional)
+  #       # labels:
+  #       # - preview
+  #       tokenRef:
+  #         secretName: github-token
+  #         key: token
+  #     requeueAfterSeconds: 30
   template:
     metadata:
-      name: "recce-{{ .branch }}-{{ .number }}"
+      # name: "recce-{{ .branch }}-{{ .number }}"
+      name: "recce"
       labels:
         application: recce
-        branch: "{{ .branch }}"
-        pr_number: "{{ .number }}"
+        # branch: "{{ .branch }}"
+        # pr_number: "{{ .number }}"
     spec:
       project: recce
       destination:
         name: in-cluster
-        namespace: "recce-pr-{{ .number }}"
+        # namespace: "recce-pr-{{ .number }}"
+        namespace: "recce"
       sources:
         - repoURL: git@github.com:mcfuhrt/argo-applications.git
           targetRevision: main
