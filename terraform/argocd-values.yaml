@@ -1,0 +1,121 @@
+# ArgoCD Helm chart values
+# Optimized for cost-effective PoC deployment
+
+global:
+  domain: ${domain}
+
+configs:
+  params:
+    server.insecure: false
+    server.rootpath: "/"
+    server.basehref: "/"
+  
+  cm:
+    # Enable ApplicationSet controller
+    application.resourceTrackingMethod: annotation
+    
+    # Timeout settings
+    timeout.reconciliation: 180s
+    
+    # Repository configuration (SSH keys will be added via Kubernetes secrets)
+    repositories: |
+      - url: git@github.com:mcfuhrt/argocd-configuration.git
+        name: argocd-configuration
+        type: git
+      - url: git@github.com:mcfuhrt/argo-applications.git
+        name: argo-applications
+        type: git
+
+# Server configuration
+server:
+  replicas: 1
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+  
+  # Ingress is managed separately in Terraform
+  ingress:
+    enabled: false
+  
+  # Metrics
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+# Repository server configuration
+repoServer:
+  replicas: 1
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+# Application controller configuration
+controller:
+  replicas: 1
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+# Redis configuration (single instance for PoC)
+redis:
+  enabled: true
+  
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# ApplicationSet controller configuration
+applicationSet:
+  enabled: true
+  
+  replicas: 1
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Notifications controller (optional, disabled for cost savings)
+notifications:
+  enabled: false
+
+# Dex (disabled, using built-in admin account for PoC)
+dex:
+  enabled: false

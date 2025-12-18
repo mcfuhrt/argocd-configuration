@@ -1,0 +1,29 @@
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and update with your values
+
+# GCP Project Configuration
+project_id = "sikwel-playground"
+region     = "europe-west3"
+
+# GKE Cluster Configuration
+cluster_name       = "argocd-recce-poc"
+machine_type       = "e2-standard-2"
+use_spot_instances = true
+
+# ArgoCD Configuration
+argocd_domain = "argocd.example.com"  # Change to your domain
+
+# GitHub Configuration
+# IMPORTANT: Update these after deployment
+# github_ssh_private_key = """-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACC/7/ZBl6v+thhVYQpVWGavCwdJX2phmHiSmTitevHSIQAAAJj6Xkfx+l5H
+8QAAAAtzc2gtZWQyNTUxOQAAACC/7/ZBl6v+thhVYQpVWGavCwdJX2phmHiSmTitevHSIQ
+AAAEA30XGYVIcoGJXWEsOkgt+FHXHzUncCo87o3uLkdvy6Lr/v9kGXq/62GFVhClVYZq8L
+B0lfamGYeJKZOK168dIhAAAAFGFyZ29jZC1naXRodWItYWNjZXNzAQ==
+-----END OPENSSH PRIVATE KEY-----"""
+# github_token          = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Recce Configuration
+recce_image_repository = "europe-west4-docker.pkg.dev/prj-dgl-c-assets/containers/datahub-recce"
+recce_image_tag        = "latest"

@@ -1,0 +1,23 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@sikwel.de  # Change this to your email
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - dns01:
+        route53:
+          region: us-east-1  # Change to your Route53 region
+          accessKeyIDSecretRef:
+            name: aws-credentials
+            key: aws-access-key-id
+          secretAccessKeySecretRef:
+            name: aws-credentials
+            key: aws-secret-access-key
+      selector:
+        dnsZones:
+        - "sikwel.de"
