@@ -1,308 +1,390 @@
-# ArgoCD Configuration Repository
+# ArgoCD Configuration for Recce Multi-PR Deployments
 
-GitOps configuration repository for deploying and managing applications on GKE using ArgoCD.
+This repository contains the complete infrastructure setup for automatic deployment of Recce applications via Pull Requests with DNS automation, SSL certificates, and GCS data integration.
 
-## 🏗️ Architecture
-
-This repository implements a complete GitOps workflow with:
+## 🏗️ Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      GitHub Repositories                         │
-├─────────────────────────────────────────────────────────────────┤
-│  RepoA (argocd-configuration)                                   │
-│    └── ArgoCD projects, applications, ApplicationSets           │
-│                                                                  │
-│  RepoB (argo-applications/recce)                                │
-│    └── Helm charts and application manifests                    │
-│                                                                  │
-│  RepoC (argo-applications)                                      │
-│    └── Application code that triggers PR-based deployments      │
-└─────────────────────────────────────────────────────────────────┘
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      GKE Cluster (GCP)                           │
-├─────────────────────────────────────────────────────────────────┤
-│  ArgoCD (GitOps Controller)                                     │
-│    ├── Watches Git repositories                                 │
-│    ├── Syncs Kubernetes manifests                               │
-│    └── Manages ApplicationSets for PR-based deploys             │
-│                                                                  │
-│  Recce Application                                              │
-│    ├── Data validation and comparison tool                      │
-│    ├── GCS Fuse for bucket synchronization                      │
-│    └── Nginx reverse proxy                                      │
-└─────────────────────────────────────────────────────────────────┘
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Google Cloud Storage                          │
-│                   (Shared Data Volume)                           │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   GitHub PR     │───▶│   ArgoCD         │───▶│  GKE Cluster    │
+│   (argo-dbt)    │    │   ApplicationSet │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                │                        │
+                                │                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Route53 DNS   │◀───│  External DNS    │◀───│ nginx Ingress   │
+│  (sikwel.de)    │    │   Controller     │    │   Controller    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+        │                       │                        │
+        │              ┌──────────────────┐              │
+        └──────────────│   cert-manager   │◀─────────────┘
+                       │  (Let's Encrypt) │
+                       └──────────────────┘
+                                │
+                       ┌──────────────────┐
+                       │  GCS Bucket      │
+                       │ (recce-data)     │
+                       └──────────────────┘
 ```
 
-## 📁 Repository Structure
+## 🎯 Features
 
-```
-argocd-configuration/
-├── applications/              # ArgoCD Application definitions
-│   └── recce/
-│       └── recce.applicationset.yaml
-├── projects/                  # ArgoCD Project definitions
-│   └── recce/
-│       ├── project.yaml
-│       └── recce-project-watcher.yaml
-├── terraform/                 # Infrastructure as Code
-│   ├── main.tf               # GKE cluster, ArgoCD, GCS bucket
-│   ├── variables.tf          # Configuration variables
-│   ├── outputs.tf            # Output values
-│   ├── argocd-values.yaml    # ArgoCD Helm values
-│   └── README.md             # Detailed documentation
-├── scripts/                   # Helper scripts
-│   ├── initialize.sh         # Deploy infrastructure
-│   ├── update-github-secrets.sh  # Configure GitHub access
-│   ├── test-deployment.sh    # End-to-end tests
-│   └── cleanup.sh            # Destroy infrastructure
-├── QUICKSTART.md             # Fast-track deployment guide
-└── README.md                 # This file
-```
-
-## 🚀 Quick Start
-
-### Option 1: Automated (Recommended)
-
-```bash
-# 1. Clone the repository
-git clone git@github.com:mcfuhrt/argocd-configuration.git
-cd argocd-configuration
-
-# 2. Run the initialization script
-cd scripts
-./initialize.sh
-
-# 3. Follow the prompts
-```
-
-### Option 2: Manual
-
-See the [Quick Start Guide](QUICKSTART.md) or [Detailed Documentation](terraform/README.md)
+- **Automatic PR Deployments**: Each PR in `mcfuhrt/argo-dbt` creates a unique deployment
+- **DNS Automation**: Automatic subdomain creation (`pr-X.sikwel.de`)
+- **SSL Certificates**: Automatic Let's Encrypt certificates via cert-manager
+- **Data Persistence**: GCS bucket integration with Workload Identity
+- **HTTPS Redirect**: Automatic HTTP to HTTPS redirection
+- **Clean Teardown**: Resources are automatically cleaned up when PRs are closed
 
 ## 📋 Prerequisites
 
-- **GCP Access**: Project `sikwel-playground` with appropriate permissions
-- **Tools**: gcloud CLI, Terraform >= 1.5.0, kubectl
-- **GitHub**: SSH key and Personal Access Token (PAT)
+- **GKE Cluster** (created via Terraform)
+- **Route53 Domain** (sikwel.de)
+- **AWS Credentials** (for Route53 management)
+- **Google Cloud Project** with required APIs enabled
+- **GitHub Token** (for PR monitoring)
 
-## 🎯 What Gets Deployed
+## 🚀 Quick Start
 
-### Infrastructure (Terraform)
-- ✅ GKE cluster (cost-optimized with spot instances)
-- ✅ VPC and networking
-- ✅ GCS bucket for Recce data
-- ✅ Workload Identity (secure bucket access)
-- ✅ Static IP for ingress
-- ✅ Service accounts and IAM bindings
-
-### ArgoCD (Helm)
-- ✅ ArgoCD server and UI
-- ✅ Repository server
-- ✅ Application controller
-- ✅ ApplicationSet controller (for PR-based deployments)
-- ✅ Managed ingress with SSL certificate
-
-### Recce Application
-- ✅ Helm chart deployment
-- ✅ GCS Fuse sidecar for data sync
-- ✅ Nginx reverse proxy
-- ✅ Workload Identity integration
-
-## 🔄 GitOps Workflow
-
-1. **Infrastructure**: Managed by Terraform in this repository
-2. **Application Config**: ArgoCD Applications watch RepoB for Helm charts
-3. **Pull Requests**: ApplicationSet creates temporary environments for each PR in RepoC
-4. **Sync**: ArgoCD automatically syncs changes from Git to Kubernetes
-
-## 📊 Cost Optimization
-
-This setup is designed for minimal cost (~€50-80/month):
-
-- **Spot Instances**: 70% cheaper than regular instances
-- **Single Zone**: Reduces cross-zone traffic costs
-- **Minimal Node Pool**: 1-3 nodes with e2-standard-2 machines
-- **Standard Storage**: For GCS bucket
-
-See [Cost Optimization Guide](terraform/README.md#cost-optimization) for more details.
-
-## 🧪 Testing
-
-Run the comprehensive test suite:
+### 1. Infrastructure Setup
 
 ```bash
-cd scripts
-./test-deployment.sh
+# Clone the repository
+git clone https://github.com/mcfuhrt/argocd-configuration.git
+cd argocd-configuration
+
+# Setup infrastructure with Terraform
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values
+terraform init
+terraform plan
+terraform apply
+
+# Get cluster credentials
+gcloud container clusters get-credentials argocd-recce-poc --zone europe-west3 --project sikwel-playground
 ```
 
-Tests include:
-- ✅ Cluster connectivity
-- ✅ ArgoCD installation
-- ✅ Secrets configuration
-- ✅ Workload Identity
-- ✅ GCS bucket access
-- ✅ DNS and SSL certificates
-- ✅ Application deployments
+### 2. DNS Automation Setup
 
-## 📖 Documentation
+```bash
+# Run the automated setup script
+./setup-dns-automation.sh
+```
 
-- **[Quick Start Guide](QUICKSTART.md)**: Fast-track deployment (30 minutes)
-- **[Detailed README](terraform/README.md)**: Comprehensive documentation
-- **[Architecture Diagrams](terraform/README.md#architecture-overview)**: Visual guides
-- **[Troubleshooting Guide](terraform/README.md#troubleshooting)**: Common issues
+This script will:
+- Install nginx Ingress Controller
+- Deploy External DNS with Route53 integration
+- Install cert-manager with Let's Encrypt ClusterIssuer
+- Deploy ArgoCD ApplicationSet for PR monitoring
+- Verify all components are working
 
-## 🔐 Security
+### 3. Create a Pull Request
+
+1. Create a PR in `mcfuhrt/argo-dbt` repository
+2. ArgoCD automatically detects the PR
+3. New deployment is created: `recce-pr-X`
+4. DNS record is created: `pr-X.sikwel.de`
+5. SSL certificate is provisioned automatically
+6. Access your application at `https://pr-X.sikwel.de`
+
+## 🔧 Component Details
+
+### Terraform Infrastructure (`terraform/`)
+
+Creates the foundational GKE cluster with:
+- **GKE Cluster**: `argocd-recce-poc` in `europe-west3`
+- **Node Pool**: 1-3 nodes (e2-standard-2)
+- **Workload Identity**: For secure GCS access
+- **Service Accounts**: For external DNS and GCS integration
+- **GCS Bucket**: `sikwel-playground-recce-data`
+
+Key files:
+- `main.tf`: Core infrastructure definition
+- `variables.tf`: Configuration variables
+- `outputs.tf`: Important output values
+
+### ArgoCD Setup (`applications/`, `projects/`)
+
+#### Project Configuration (`projects/recce/`)
+- **project.yaml**: Defines the recce ArgoCD project with permissions
+- **recce-project-watcher.yaml**: Monitors project health
+
+#### ApplicationSet (`applications/recce/`)
+- **recce.applicationset.yaml**: Main ApplicationSet that monitors PRs
+
+```yaml
+# Key features of the ApplicationSet:
+generators:
+  - pullRequest:
+      github:
+        owner: mcfuhrt
+        repo: argo-dbt
+        tokenRef:
+          secretName: github-token
+          key: token
+
+# Auto-generates applications with:
+# - Unique names: recce-{branch}-{number}
+# - nginx ingress with External DNS annotations
+# - cert-manager SSL certificates
+# - GCS data integration
+```
+
+### DNS Automation (`external-dns/`)
+
+External DNS automatically manages Route53 records:
+
+```yaml
+# Monitors both ingresses and services
+args:
+  - --source=ingress
+  - --source=service
+  - --domain-filter=sikwel.de
+  - --provider=aws
+  - --registry=txt
+  - --txt-owner-id=gke-cluster-external-dns
+```
+
+### SSL Certificates (`cert-manager/`)
+
+Automated SSL certificate management:
+
+```yaml
+# ClusterIssuer for Let's Encrypt
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+    - dns01:
+        route53:
+          region: us-east-1
+```
+
+### Ingress Controller (`nginx-ingress/`)
+
+nginx Ingress Controller for reliable HTTPS handling:
+- LoadBalancer service for external access
+- Automatic HTTP to HTTPS redirect
+- SSL termination
+- External DNS integration
+
+## 🔐 Security & Access
+
+### Service Accounts
+
+1. **Workload Identity Service Account**
+   - Used for GCS bucket access
+   - Bound to Kubernetes service account `datahub-dbt`
+
+2. **External DNS Service Account**
+   - Route53 permissions for DNS record management
+   - IAM user: `route53-argo-cd`
+
+3. **cert-manager Service Account**
+   - Route53 permissions for DNS-01 challenges
+   - Same IAM user as External DNS
+
+### Required AWS IAM Permissions
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:ChangeResourceRecordSets",
+                "route53:ListHostedZones",
+                "route53:ListResourceRecordSets",
+                "route53:ListHostedZonesByName",
+                "route53:GetChange"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
 
 ### Secrets Management
 
-This repository uses Kubernetes secrets for sensitive data:
-- GitHub SSH key (for private repository access)
-- GitHub token (for Pull Request generator)
+Required secrets:
+- `github-token`: GitHub personal access token
+- `argocd-ssh-key`: SSH key for private repositories
+- `aws-credentials`: AWS access keys for Route53
 
-**Important**: Never commit secrets to Git!
+## 📊 Monitoring & Debugging
 
-### Workload Identity
+### Check Component Status
 
-Applications access GCS buckets using Workload Identity (not service account keys):
-- More secure than downloading keys
-- Automatic credential rotation
-- Fine-grained IAM permissions
-
-## 🛠️ Management Commands
-
-### Deploy Infrastructure
 ```bash
-cd scripts
-./initialize.sh
-```
-
-### Update GitHub Secrets
-```bash
-cd scripts
-./update-github-secrets.sh
-```
-
-### Test Deployment
-```bash
-cd scripts
-./test-deployment.sh
-```
-
-### Access ArgoCD
-```bash
-# Via port-forward
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-
-# Get admin password
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d && echo
-```
-
-### View Applications
-```bash
+# ArgoCD Applications
 kubectl get applications -n argocd
-kubectl get pods -n recce
+
+# External DNS
+kubectl logs -l app.kubernetes.io/name=external-dns -n external-dns-system
+
+# cert-manager
+kubectl get certificates -A
+kubectl describe clusterissuer letsencrypt-prod
+
+# nginx Ingress
+kubectl get ingress -A
+kubectl get svc -n ingress-nginx
 ```
 
-### Cleanup
-```bash
-cd scripts
-./cleanup.sh
+### Troubleshooting
+
+1. **DNS not resolving**:
+   ```bash
+   # Check External DNS logs
+   kubectl logs -l app=external-dns -n external-dns-system
+   
+   # Verify Route53 permissions
+   aws route53 list-hosted-zones
+   ```
+
+2. **SSL certificate issues**:
+   ```bash
+   # Check cert-manager logs
+   kubectl logs -l app=cert-manager -n cert-manager
+   
+   # Check certificate status
+   kubectl describe certificate recce-pr-X-tls -n recce
+   ```
+
+3. **Application not accessible**:
+   ```bash
+   # Check ingress status
+   kubectl get ingress recce-pr-X -n recce
+   
+   # Check nginx controller
+   kubectl logs -l app.kubernetes.io/name=ingress-nginx -n ingress-nginx
+   ```
+
+## 🔄 Workflow Example
+
+1. **Developer creates PR in `mcfuhrt/argo-dbt`**
+2. **ArgoCD ApplicationSet detects PR**
+   - Creates new application: `recce-feature123-7`
+   - Deploys to namespace: `recce`
+3. **nginx Ingress Controller**
+   - Creates LoadBalancer service
+   - Gets external IP: `34.185.139.242`
+4. **External DNS**
+   - Detects ingress with annotations
+   - Creates Route53 A record: `pr-7.sikwel.de → 34.185.139.242`
+5. **cert-manager**
+   - Detects ingress with TLS configuration
+   - Creates Let's Encrypt certificate via DNS-01 challenge
+6. **Application Ready**
+   - HTTPS access: `https://pr-7.sikwel.de`
+   - Automatic HTTP redirect
+   - Valid SSL certificate
+
+## 📁 Directory Structure
+
+```
+argocd-configuration/
+├── applications/           # ArgoCD Application definitions
+│   └── recce/             # Recce ApplicationSet
+├── cert-manager/          # SSL certificate management
+├── configuration/         # ArgoCD configuration
+├── external-dns/          # DNS automation
+├── nginx-ingress/         # Ingress controller
+├── projects/              # ArgoCD projects
+│   └── recce/            # Recce project definition
+├── scripts/               # Utility scripts
+├── terraform/             # Infrastructure as code
+├── setup-dns-automation.sh # Automated setup script
+└── README.md              # This file
 ```
 
-## 🔧 Configuration
+## 🔧 Configuration Files
 
-### Terraform Variables
+### Key Configuration Files
 
-Key variables in `terraform/terraform.tfvars`:
+- **ApplicationSet**: `applications/recce/recce.applicationset.yaml`
+- **External DNS**: `external-dns/external-dns.yaml`
+- **cert-manager**: `cert-manager/cluster-issuer.yaml`
+- **nginx Ingress**: `nginx-ingress/install.sh`
+- **Terraform**: `terraform/main.tf`
 
+### Environment-Specific Values
+
+Applications use Helm value overrides:
+- `overrides/stg.yaml`: Staging environment configuration
+- `overrides/prd.yaml`: Production environment configuration
+
+## 🚀 Advanced Usage
+
+### Custom Domains
+
+To add additional domains, update External DNS domain filter:
+```yaml
+args:
+  - --domain-filter=sikwel.de
+  - --domain-filter=yourdomain.com
+```
+
+### Multiple Repositories
+
+Add additional ApplicationSets for different repositories:
+```yaml
+generators:
+- pullRequest:
+    github:
+      owner: yourorg
+      repo: another-repo
+```
+
+### Resource Scaling
+
+Adjust node pool and resource limits in `terraform/main.tf`:
 ```hcl
-project_id         = "sikwel-playground"
-region             = "europe-west3"
-cluster_name       = "argocd-recce-poc"
-machine_type       = "e2-standard-2"
-use_spot_instances = true
-argocd_domain      = "argocd.your-domain.com"
+node_config {
+  machine_type = "e2-standard-4"  # Larger instances
+}
 ```
 
-### ArgoCD Applications
+## 📝 Maintenance
 
-Applications are defined in `applications/recce/`:
-- **recce.applicationset.yaml**: Main application or ApplicationSet for PR-based deploys
+### Regular Tasks
 
-Projects are defined in `projects/recce/`:
-- **project.yaml**: ArgoCD project definition
-- **recce-project-watcher.yaml**: Auto-applies applications from this repo
+1. **Update ArgoCD**: Follow ArgoCD upgrade documentation
+2. **Certificate Renewal**: Automatic via cert-manager
+3. **DNS Records**: Automatic via External DNS
+4. **Terraform State**: Backup `terraform.tfstate` regularly
 
-## 📦 Application Deployment
+### Backup Strategy
 
-### Manual Deployment
-```bash
-kubectl apply -f projects/recce/project.yaml
-kubectl apply -f projects/recce/recce-project-watcher.yaml
-```
-
-### Automatic Sync
-The project watcher automatically deploys applications when you commit changes to the `applications/recce/` directory.
-
-### Pull Request Deployments
-Uncomment the ApplicationSet section in `recce.applicationset.yaml` to enable PR-based deployments.
-
-## 🐛 Troubleshooting
-
-### ArgoCD can't sync applications
-- Check GitHub SSH key: `kubectl get secret github-ssh-key -n argocd`
-- Verify repository connection in ArgoCD UI: Settings → Repositories
-
-### Pods can't access GCS bucket
-- Check Workload Identity: `kubectl get sa datahub-dbt -n recce -o yaml`
-- View logs: `kubectl logs -n recce <pod> -c gcs-fuse-sidecar`
-
-### SSL certificate not provisioning
-- Verify DNS: `dig argocd.your-domain.com`
-- Check certificate: `kubectl describe managedcertificate argocd-cert -n argocd`
-- Wait 10-30 minutes for certificate provisioning
-
-See [Detailed Troubleshooting](terraform/README.md#troubleshooting) for more solutions.
-
-## 📚 Additional Resources
-
-### Official Documentation
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [Recce Documentation](https://docs.reccehq.com/)
-- [GKE Documentation](https://cloud.google.com/kubernetes-engine/docs)
-- [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
-
-### Guides
-- [ArgoCD ApplicationSets](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/)
-- [GCS Fuse CSI Driver](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/cloud-storage-fuse-csi-driver)
-- [GitHub SSH Access](https://medium.com/@tiwarisan/argocd-how-to-access-private-github-repository-with-ssh-key-new-way-49cc4431971b)
+1. **ArgoCD Configuration**: Version controlled in this repository
+2. **Terraform State**: Stored locally (consider remote backend)
+3. **Kubernetes Resources**: Backed up via ArgoCD sync
 
 ## 🤝 Contributing
 
-1. Create a feature branch
-2. Make your changes
-3. Test with `./scripts/test-deployment.sh`
+1. Fork the repository
+2. Create a feature branch
+3. Test changes in development environment
 4. Submit a pull request
 
-## 📝 License
+## 📞 Support
 
-[Your License Here]
+For issues and questions:
+1. Check the troubleshooting section
+2. Review component logs
+3. Consult ArgoCD and Kubernetes documentation
+4. Open an issue in this repository
 
-## 💬 Support
+## 🔗 References
 
-For issues or questions:
-- Check [Troubleshooting Guide](terraform/README.md#troubleshooting)
-- Review [Quick Start](QUICKSTART.md)
-- Open an issue in this repository
-
----
-
-**Made with ❤️ for GitOps and Infrastructure as Code**
+- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
+- [External DNS](https://github.com/kubernetes-sigs/external-dns)
+- [cert-manager](https://cert-manager.io/)
+- [nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
+- [Terraform GKE](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
