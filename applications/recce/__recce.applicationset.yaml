@@ -38,30 +38,30 @@ spec:
         helm:
           releaseName: "recce-pr-{{ .number }}"
           valueFiles:
-            - overrides/common.yaml
+            - overrides/stg.yaml
           values: |
             # PR-specific overrides for unique resource naming
             nameOverride: "recce-pr-{{ .number }}"
             
-            # # Shared service account
-            # serviceAccount:
-            #   create: false
-            #   name: datahub-dbt
-            # serviceAccountName: datahub-dbt
+            # Shared service account (as required)  
+            serviceAccount:
+              create: false
+              name: datahub-dbt
+            serviceAccountName: datahub-dbt
             
-            # # GCS configuration  
-            # storage:
-            #   bucketName: "sikwel-playground-recce-data"
+            # GCS configuration  
+            storage:
+              bucketName: "sikwel-playground-recce-data"
             
             # PR path within GCS bucket
             prPath: "pr-{{ .number }}"
             
-            # GCS bucket mount configuration
+            # GCS bucket mount configuration (entire bucket)
             dataMount:
-              # type: pvc
+              type: pvc
               pvcName: "recce-pr-{{ .number }}-pvc"
               pvName: "recce-pr-{{ .number }}-pv"
-              # mountPath: /data
+              mountPath: /data
             
             # PR-specific environment variables
             env:
@@ -70,10 +70,15 @@ spec:
             
             # Enhanced ingress with automatic DNS and SSL using nginx
             ingress:
+              enabled: true
+              className: "nginx"
               hostname: "recce-pr-{{ .number }}.sikwel.de"
               annotations:
                 external-dns.alpha.kubernetes.io/hostname: "recce-pr-{{ .number }}.sikwel.de"
+                external-dns.alpha.kubernetes.io/ttl: "300"
+                cert-manager.io/cluster-issuer: "letsencrypt-prod"
               tls:
+                enabled: true
                 secretName: "recce-pr-{{ .number }}-tls"
                 hostname: "recce-pr-{{ .number }}.sikwel.de"
       syncPolicy:
