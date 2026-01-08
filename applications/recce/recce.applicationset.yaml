@@ -70,7 +70,7 @@ spec:
             
             # Enhanced ingress with automatic DNS and SSL using nginx
             ingress:
-              # hostname: "recce-pr-{{ .number }}.sikwel.de"
+              hostname: "recce-pr-{{ .number }}.sikwel.de"
               annotations:
                 external-dns.alpha.kubernetes.io/hostname: "recce-pr-{{ .number }}.sikwel.de"
               hosts:
