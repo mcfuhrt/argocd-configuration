@@ -20,11 +20,12 @@ spec:
           key: token
       requeueAfterSeconds: 30
       values:
-        cluster: dbp05
+        cluster: in-cluster
         environment: prd
+        release: recce-pr-{{ .number }}
   template:
     metadata:
-      name: "recce-{{ .branch }}-{{ .number }}"
+      name: recce-{{ .branch }}-{{ .number }}
       labels:
         cluster: '{{ .values.cluster }}'
         environment: '{{ .values.environment }}'
@@ -34,49 +35,47 @@ spec:
     spec:
       project: recce
       destination:
-        name: in-cluster
         namespace: recce
+        name: '{{ .values.cluster }}'
       sources:
         - repoURL: git@github.com:mcfuhrt/argo-applications.git
           targetRevision: main
           path: recce
           helm:
-            releaseName: "recce-pr-{{ .number }}"
+            releaseName: '{{ .values.release }}'
             valueFiles:
               - values.yaml
               - overrides/common.yaml
             values: |
               # PR-specific overrides for unique resource naming
-              nameOverride: "recce-pr-{{ .number }}"
+              nameOverride: '{{ .values.release }}'
               
               # PR path within GCS bucket
-              prPath: "pr-{{ .number }}"
+              prPath: 'pr-{{ .number }}'
               
               # GCS bucket mount configuration
               dataMount:
-                # type: pvc
-                pvcName: "recce-pr-{{ .number }}-pvc"
-                pvName: "recce-pr-{{ .number }}-pv"
-                # mountPath: /data
+                pvcName: {{ .values.release }}-pvc
+                pvName: {{ .values.release }}-pv
               
               # PR-specific environment variables
               env:
-                PR_NUMBER: "{{ .number }}"
-                PR_DATA_PATH: "pr-{{ .number }}"
+                PR_NUMBER: '{{ .number }}'
+                PR_DATA_PATH: 'pr-{{ .number }}'
               
               # Enhanced ingress with automatic DNS and SSL using nginx
               ingress:
                 annotations:
-                  external-dns.alpha.kubernetes.io/hostname: "recce-pr-{{ .number }}.sikwel.de"
+                  external-dns.alpha.kubernetes.io/hostname: "{{ .values.release }}.sikwel.de"
                 hosts:
-                  - host: "recce-pr-{{ .number }}.sikwel.de"
+                  - host: {{ .values.release }}.sikwel.de
                     paths:
                       - path: /
                         pathType: Prefix
                 tls:
-                  - secretName: "recce-pr-{{ .number }}-tls"
+                  - secretName: {{ .values.release }}-tls
                     hosts:
-                      - "recce-pr-{{ .number }}.sikwel.de"
+                      - {{ .values.release }}.sikwel.de
       info:
       - name: Description
         value: >-
