@@ -74,9 +74,9 @@ spec:
                 external-dns.alpha.kubernetes.io/hostname: "recce-pr-{{ .number }}.sikwel.de"
               hosts:
                 - host: "recce-pr-{{ .number }}.sikwel.de"
-                  # paths:
-                  #   - path: /
-                  #     pathType: Prefix
+                  paths:
+                    - path: /
+                      pathType: Prefix
               tls:
                 - secretName: "recce-pr-{{ .number }}-tls"
                   hosts:
