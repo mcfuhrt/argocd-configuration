@@ -19,10 +19,13 @@ spec:
           secretName: github-token
           key: token
       requeueAfterSeconds: 30
+      values:
+        pr_branch: '{{ .branch }}'
   template:
     metadata:
       name: "recce-{{ .branch }}-{{ .number }}"
       labels:
+        pr_branch: '{{ .values.pr_branch }}'
         application: recce
         branch: "{{ .branch }}"
         pr_number: "{{ .number }}"
