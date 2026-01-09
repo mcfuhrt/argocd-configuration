@@ -44,24 +44,24 @@ spec:
             nameOverride: "recce-pr-{{ .number }}"
             
             # Shared service account
-            serviceAccount:
-              create: false
-              name: datahub-dbt
-            serviceAccountName: datahub-dbt
+            # serviceAccount:
+            #   create: false
+            #   name: datahub-dbt
+            # serviceAccountName: datahub-dbt
             
             # GCS configuration  
-            storage:
-              bucketName: "sikwel-playground-recce-data"
+            # storage:
+            #   bucketName: "sikwel-playground-recce-data"
             
             # PR path within GCS bucket
             prPath: "pr-{{ .number }}"
             
             # GCS bucket mount configuration
             dataMount:
-              type: pvc
+              # type: pvc
               pvcName: "recce-pr-{{ .number }}-pvc"
               pvName: "recce-pr-{{ .number }}-pv"
-              mountPath: /data
+              # mountPath: /data
             
             # PR-specific environment variables
             env:
@@ -70,21 +70,17 @@ spec:
             
             # Enhanced ingress with automatic DNS and SSL using nginx
             ingress:
-              # hostname: "recce-pr-{{ .number }}.sikwel.de"
               annotations:
                 external-dns.alpha.kubernetes.io/hostname: "recce-pr-{{ .number }}.sikwel.de"
               hosts:
                 - host: "recce-pr-{{ .number }}.sikwel.de"
-                  paths:
-                    - path: /
-                      pathType: Prefix
+                  # paths:
+                  #   - path: /
+                  #     pathType: Prefix
               tls:
                 - secretName: "recce-pr-{{ .number }}-tls"
                   hosts:
                     - "recce-pr-{{ .number }}.sikwel.de"
-              # tls:
-              #   secretName: "recce-pr-{{ .number }}-tls"
-              #   hostname: "recce-pr-{{ .number }}.sikwel.de"
       syncPolicy:
         automated:
           prune: true
