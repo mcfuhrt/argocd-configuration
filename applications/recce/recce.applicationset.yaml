@@ -20,12 +20,14 @@ spec:
           key: token
       requeueAfterSeconds: 30
       values:
-        pr_branch: '{{ .branch }}'
+        cluster: dbp05
+        environment: prd
   template:
     metadata:
       name: "recce-{{ .branch }}-{{ .number }}"
       labels:
-        pr_branch: '{{ .values.pr_branch }}'
+        cluster: '{{ .values.cluster }}'
+        environment: '{{ .values.environment }}'
         application: recce
         branch: "{{ .branch }}"
         pr_number: "{{ .number }}"
