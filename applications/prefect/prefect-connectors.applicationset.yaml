@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: prefect-connectors-dev
-  namespace: prefect-dev
+  namespace: argocd
 spec:
   generators:
   - git:
