@@ -1,0 +1,21 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: prefect
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-50"
+spec:
+  description: prefect application
+  sourceRepos:
+  - '*'
+  destinations:
+  - namespace: '*'
+    name: '*'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'

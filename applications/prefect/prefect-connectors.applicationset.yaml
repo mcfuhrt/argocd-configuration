@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: prefect-connectors-dev
+  namespace: prefect-dev
+spec:
+  generators:
+  - git:
+      repoURL: git@github.com:mcfuhrt/argo-applications.git
+      revision: main
+      directories:
+        - path: prefect/connectors/*
+  template:
+    metadata:
+      name: '{{ path.basename }}-dev'
+    spec:
+      project: prefect
+      source:
+        repoURL: git@github.com:mcfuhrt/argo-applications.git
+        path: '{{ path }}'
+        targetRevision: main
+        plugin:
+          name: ConfigMapFromDirectory
+      destination:
+        server: https://kubernetes.default.svc  # DEV GKE
+        namespace: prefect-dev
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

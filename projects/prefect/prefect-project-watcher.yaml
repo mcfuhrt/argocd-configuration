@@ -1,0 +1,23 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prefect-project-watcher
+  annotations:
+    argocd.argoproj.io/sync-wave: "-15"  # should be less than infrastructure
+spec:
+  destination:
+    namespace: argocd
+    name: in-cluster
+  source:
+    path: applications/prefect
+    repoURL: git@github.com:mcfuhrt/argocd-configuration.git
+    targetRevision: HEAD
+    directory:
+      recurse: true
+  project: prefect
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
