@@ -86,6 +86,8 @@ spec:
               
               # Enhanced ingress with automatic DNS and SSL using nginx
               ingress:
+                gcp:
+                  enabled: false
                 annotations:
                   external-dns.alpha.kubernetes.io/hostname: "{{ .values.release }}.sikwel.de"
                 hosts:
