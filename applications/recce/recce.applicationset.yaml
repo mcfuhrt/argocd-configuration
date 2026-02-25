@@ -7,17 +7,33 @@ spec:
   goTemplateOptions: ["missingkey=error"]
   generators:
   - pullRequest:
-      github:
-        # The GitHub organization or user.
-        owner: mcfuhrt
-        # The Github repository
-        repo: argo-dbt
-        # Labels is used to filter the PRs that you want to target. (optional)
-        # labels:
-        # - preview
+      # github:
+      #   # The GitHub organization or user.
+      #   owner: mcfuhrt
+      #   # The Github repository
+      #   repo: argo-dbt
+      #   # Labels is used to filter the PRs that you want to target. (optional)
+      #   # labels:
+      #   # - preview
+      #   tokenRef:
+      #     secretName: github-token
+      #     key: token
+      azuredevops:
+        # Azure DevOps org to scan. Required.
+        organization: hinnenkamp
+        # Azure DevOps project name to scan. Required.
+        project: recce
+        # Azure DevOps repo name to scan. Required.
+        repo: dbt
+        # The Azure DevOps API URL to talk to. If blank, use https://dev.azure.com/.
+        api: https://dev.azure.com/
+        # Reference to a Secret containing an access token. (optional)
         tokenRef:
-          secretName: github-token
+          secretName: devops-token
           key: token
+        # Labels is used to filter the PRs that you want to target. (optional)
+        labels:
+        - preview
       requeueAfterSeconds: 30
       values:
         cluster: in-cluster
@@ -38,9 +54,14 @@ spec:
         namespace: recce
         name: '{{ .values.cluster }}'
       sources:
-        - repoURL: git@github.com:mcfuhrt/argo-applications.git
-          targetRevision: main
-          path: recce
+          # GitHub
+        # - repoURL: git@github.com:mcfuhrt/argo-applications.git
+        #   targetRevision: main
+        #   path: recce
+          # Azure DevOps
+        - repoURL: git@ssh.dev.azure.com:v3/hinnenkamp/recce/applications
+          targetRevision: development
+          path: .
           helm:
             releaseName: '{{ .values.release }}'
             valueFiles:
