@@ -19,8 +19,6 @@ spec:
         repoURL: git@github.com:mcfuhrt/argo-applications.git
         path: '{{ path }}'
         targetRevision: main
-        plugin:
-          name: ConfigMapFromDirectory
       destination:
         server: https://kubernetes.default.svc  # DEV GKE
         namespace: prefect-dev
